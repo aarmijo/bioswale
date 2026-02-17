@@ -1,6 +1,6 @@
 # Bioswale - Sensores de humedad del terreno Sigfox
 
-Sistema de monitorización IoT de humedad y altura de agua en terrenos. Utiliza sensores **HC-ANA-SIG-Z1** (Sigfox) configurados como grupo en el backend de Sigfox, con procesamiento de datos mediante Node-RED.
+Sistema de monitorización IoT de humedad del suelo (soil moisture) y altura de agua en terrenos (bioswale). Utiliza sensores **TEROS 10** (humedad del terreno) y **S-8010 SMART LINE** (nivel hidrostático), conectados a dispositivos **HC-ANA-SIG-Z1** (Sigfox), con procesamiento de datos mediante Node-RED.
 
 ## Arquitectura del sistema
 
@@ -11,7 +11,7 @@ Sensores HC-ANA-SIG-Z1 (Sigfox)
 Backend Sigfox (callback DATA ADVANCED)
         │  POST JSON
         ▼
-Node-RED (webhook /sigfox/pirozzini)
+Node-RED (webhook /sigfox/bioswale)
         │
         ├─ Switch (identifica sensor por device ID)
         │       │
@@ -19,79 +19,67 @@ Node-RED (webhook /sigfox/pirozzini)
         │  Decoder (función JS por tipo de sensor)
         │       │
         │       ▼
-        └─ InfluxDB (bucket: pirozzini, org: tecnalia)
+        └─ InfluxDB (bucket: bioswale, org: tecnalia)
 ```
 
-## Sensores (adaptar)
+## Sensores
 
-El proyecto utiliza tres tipos de sensores NTC, todos conectados a dispositivos HC-ANA-SIG-Z1:
+El proyecto utiliza dos tipos de sensores, conectados a dispositivos HC-ANA-SIG-Z1:
 
-### Sensor de temperatura y humedad ambiental
+### Sensor de humedad del terreno — TEROS 10 (METER Group)
 
-| Campo | Valor |
-|---|---|
-| Sensor NTC | **NTCAIMME3C90373** |
-| Tipo | HC-TEMP-HUM |
-| Canales | 2 (canal 1: temperatura NTC, canal 2: humedad) |
-| Rango temperatura | -32.1 °C a 105.0 °C |
-| Resolución tabla | 0.1 °C (1371 puntos de calibración) |
-| Resistencia de referencia | 100 kΩ (divisor de tensión) |
-| Tensión de alimentación | 3.3 V |
-| Salida | temperatura (°C), humedad (%), batería |
-
-### Sensor de temperatura radiante
+Sensor de contenido volumétrico de agua (VWC) del suelo. Mide la permitividad dieléctrica del suelo a 70 MHz para determinar la humedad, minimizando efectos de salinidad y textura.
 
 | Campo | Valor |
 |---|---|
-| Sensor NTC | **Kennlinie NTC 10kOhm** |
-| Tipo | HC-SOLAR-RAD |
-| Canales | 1 (canal 1: temperatura NTC) |
-| Rango temperatura | -40 °C a 125 °C |
-| Resolución tabla | 1 °C (166 puntos de calibración) |
-| Resistencia de referencia | 100 kΩ (divisor de tensión) |
-| Tensión de alimentación | 3.3 V |
-| Salida | temperatura (°C), batería |
+| Fabricante | [METER Group](https://metergroup.com/es/products/teros-10/) |
+| Modelo | **TEROS 10** |
+| Tipo en el sistema | HC-SOIL-BIO |
+| Magnitud | Contenido Volumétrico de Agua (VWC) |
+| Canales | 1 (canal 1: VWC) |
+| Rango VWC | 0.00–0.64 m³/m³ (calibración mineral) |
+| Resolución | 0.001 m³/m³ |
+| Precisión (suelo mineral) | ±0.03 m³/m³ (EC solución < 8 dS/m) |
+| Precisión (calibración específica) | ±0.01–0.02 m³/m³ |
+| Frecuencia de medición dieléctrica | 70 MHz |
+| Salida | 1000–2500 mV |
+| Tensión de alimentación | 3.0–15.0 VDC |
+| Rango de temperatura operativa | -40 °C a 60 °C |
+| Unidad | m³/m³ |
 
-### Sensor de temperatura de pavimento (asfalto)
+### Sensor de nivel hidrostático — S-8010 SMART LINE (SMERI)
+
+Transmisor de presión sumergible para medición de nivel de líquidos por presión hidrostática. Mide la presión en la membrana separadora del sensor sumergido y la compara con la presión atmosférica mediante un capilar integrado en el cable.
 
 | Campo | Valor |
 |---|---|
-| Sensor NTC | **B57703M1104A002** |
-| Tipo | HC-TEMP-ASF |
-| Canales | 3 (tres sondas NTC independientes) |
-| Rango temperatura | 10 °C a 200 °C |
-| Resolución tabla | 5 °C (39 puntos de calibración) |
-| Resistencia de referencia | 100 kΩ (divisor de tensión) |
-| Tensión de alimentación | 3.3 V |
-| Salida | temp_1 (°C), temp_2 (°C), temp_3 (°C), batería |
+| Fabricante | [SMERI International](https://smeri-international.com/smeri-s-8010/) |
+| Modelo | **S-8010 SMART LINE** |
+| Tipo en el sistema | HC-BAR |
+| Magnitud | Altura de columna de agua (nivel hidrostático) |
+| Canales | 1 (canal 1: presión) |
+| Rango de presión | 0–1 bar a 0–20 bar |
+| Diámetro | 24 mm |
+| Principio de medición | Presión hidrostática (membrana separadora) |
+| Referencia atmosférica | Tubo de aire integrado en el cable |
+| Grado de protección | IP68 |
+| Unidad | mm |
 
 ## Inventario de dispositivos
 
-### Temperatura y humedad ambiental
+### Humedad del terreno (TEROS 10)
 
-| Nombre | Device ID Sigfox | Zona | Descripción |
+| Nombre | Device ID Sigfox | Coordenadas | Descripción |
 |---|---|---|---|
-| HC-TEMP-HUM-01 | `C0F9F9` | Zona 1 | Sensor temperatura y humedad ambiental en zona 1 |
+| HC-SOIL-BIO-01 | `C0F8CC` | 41.4170, 2.1352 | Sensor de humedad del terreno |
+| HC-SOIL-BIO-02 | `C0F09B` | 41.4170, 2.1352 | Sensor de humedad del terreno |
+| HC-SOIL-BIO-03 | `C0FB1E` | 41.4170, 2.1352 | Sensor de humedad del terreno |
 
-### Temperatura radiante
+### Nivel hidrostático (S-8010 SMART LINE)
 
-| Nombre | Device ID Sigfox | Zona | Descripción |
+| Nombre | Device ID Sigfox | Coordenadas | Descripción |
 |---|---|---|---|
-| HC-TEMP-RAD-04 | `C0F09C` | Zona 1 | Sensor de temperatura radiante zona 1 cara al cielo |
-| HC-SOLAR-RAD-01 | `20320DB` | Zona 1 | Sensor de temperatura radiante zona 1 cara al pavimento |
-| HC-SOLAR-RAD-02 | `2031AAC` | Zona 2 | Sensor de temperatura radiante zona 2 cara al pavimento |
-| HC-SOLAR-RAD-03 | `2032956` | Zona 3 | Sensor de temperatura radiante zona 3 cara al pavimento |
-
-### Temperatura de pavimento (asfalto)
-
-| Nombre | Device ID Sigfox | Zona | Descripción |
-|---|---|---|---|
-| HC-TEMP-ASF-01 | `2032029` | Zona 1 | Sensor de temperatura de pavimento zona 1 capa de arriba |
-| HC-TEMP-ASF-02 | `2032198` | Zona 1 | Sensor de temperatura de pavimento zona 1 capa de abajo |
-| HC-TEMP-ASF-03 | `C0F8CE` | Zona 2 | Sensor de temperatura de pavimento zona 2 |
-| HC-TEMP-ASF-04 | `C0FF67` | Zona 2 | Sensor de temperatura de pavimento zona 2 |
-| HC-TEMP-ASF-05 | `C0F2D1` | Zona 3 | Sensor de temperatura de pavimento zona 3 |
-| HC-TEMP-ASF-06 | `C0F2CF` | Zona 3 | Sensor de temperatura de pavimento zona 3 |
+| HC-KUBIK-BAR-LEV | `2031F3C` | 41.5419, 2.2353 | Sensor de presión de agua (nivel) |
 
 ## Configuración del backend Sigfox
 
@@ -134,15 +122,15 @@ El proyecto utiliza tres tipos de sensores NTC, todos conectados a dispositivos 
 
 El flujo está respaldado en `Node-RED backup/flows.json`. Su estructura es:
 
-1. **HTTP Input** (`POST /sigfox/pirozzini`): Recibe los callbacks del backend Sigfox.
+1. **HTTP Input** (`POST /sigfox/bioswale`): Recibe los callbacks del backend Sigfox.
 2. **HTTP Response**: Devuelve respuesta al backend Sigfox.
 3. **Switch nodes**: Cada sensor tiene un nodo switch que filtra por `msg.payload.device` (device ID Sigfox). El mensaje entrante se envía en paralelo a todos los switches.
 4. **Decoder (function nodes)**: Cada switch conecta a una función JavaScript que decodifica la trama hexadecimal del sensor.
-5. **InfluxDB Output**: Los datos decodificados se almacenan en InfluxDB (bucket: `pirozzini`, org: `tecnalia`, measurement: `pavimento`).
+5. **InfluxDB Output**: Los datos decodificados se almacenan en InfluxDB (bucket: `bioswale`, org: `tecnalia`, measurement: `terreno`).
 
 ## Decodificación de tramas
 
-Todos los sensores envían tramas de **12 bytes (24 caracteres hexadecimales)**. La estructura de la trama es:
+Todos los sensores envían tramas de **12 bytes (24 caracteres hexadecimales)** a través de los dispositivos HC-ANA-SIG-Z1. La estructura de la trama es:
 
 ```
 [B][CCCCCCC][DDDDDDD][EEEEEEE][FF]
@@ -154,47 +142,44 @@ Todos los sensores envían tramas de **12 bytes (24 caracteres hexadecimales)**.
  └─ Batería: 1 carácter hex (posición 0)
 ```
 
-### Cálculo de voltaje y resistencia
+### Cálculo de voltaje
 
 Para cada canal:
 
 ```
 voltaje = parseInt(hexSubstring, 16) / 1000000    (en voltios)
-resistencia = 100000 × ((3.3 / voltaje) - 1)      (en ohmios)
 ```
 
-### Interpolación de temperatura
+### Cálculo de humedad del terreno (VWC) — TEROS 10
 
-La temperatura se calcula mediante **interpolación lineal** entre los puntos de la tabla resistencia-temperatura del sensor NTC correspondiente:
-
-```
-T = T_superior + (R_entrada - R_superior) × (T_inferior - T_superior) / (R_inferior - R_superior)
-```
-
-Donde `R_superior` y `R_inferior` son los valores de resistencia de la tabla que encierran al valor medido.
-
-### Cálculo de humedad (sensor ambiental)
-
-La humedad relativa se calcula a partir del voltaje del canal 2 y la temperatura:
+El contenido volumétrico de agua se calcula mediante una fórmula polinómica cúbica a partir del voltaje del canal 1 convertido a milivoltios:
 
 ```
-humedad = ((V_canal2 - 3.3 × 0.1515) / (3.3 × 0.00636)) × (1.0546 - 0.00216 × T) + ajuste
+mV = voltaje × 1000
+VWC = 4.824×10⁻¹⁰ × mV³ − 2.278×10⁻⁶ × mV² + 3.898×10⁻³ × mV − 2.154
 ```
 
-Donde `ajuste` es un offset de calibración (por defecto 0).
+Límites: mínimo 0 m³/m³, máximo 0.90 m³/m³. El resultado se redondea a 4 decimales.
+
+### Cálculo de altura de agua — S-8010 SMART LINE
+
+La altura de la columna de agua se calcula a partir del voltaje del canal 1:
+
+```
+altura (mm) = ((1.4 × voltaje) + 0.004) × 1000
+```
 
 ## Estructura del proyecto
 
 ```
-pirozzini/
+bioswale/
 ├── README.md                              # Este archivo
-├── Node-RED backup/
-│   └── flows.json                         # Backup del flujo Node-RED completo
-└── Node-RED decoder/
-    ├── temp-hum-ambiental.js              # Decoder: temperatura y humedad ambiental
-    ├── temp-hum-ambiental_test.js         # Decoder de test (device ID fijo: C0F9F9)
-    ├── temp-radiante.js                   # Decoder: temperatura radiante
-    └── temp-asfalto.js                    # Decoder: temperatura de pavimento (3 canales)
+├── nodered.png                            # Diagrama del flujo Node-RED
+├── sensor-soil-moisture.js                # Decoder: humedad del terreno (VWC) — TEROS 10
+├── sensor-presion.js                      # Decoder: nivel hidrostático — S-8010 SMART LINE
+├── sensor-presion-test.js                 # Decoder de test (presión, device ID de prueba)
+└── Node-RED backup/
+    └── flows.json                         # Backup del flujo Node-RED completo
 ```
 
 ## Base de datos
@@ -204,5 +189,5 @@ pirozzini/
 | Motor | InfluxDB 2.0 |
 | URL | `http://192.168.1.6:8086` |
 | Organización | `tecnalia` |
-| Bucket | `pirozzini` |
-| Measurement | `pavimento` |
+| Bucket | `bioswale` |
+| Measurement | `terreno` |
