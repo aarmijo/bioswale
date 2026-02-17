@@ -1,0 +1,281 @@
+[
+    {
+        "id": "f886dfa246e3837f",
+        "type": "tab",
+        "label": "Bioswale",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "6c104b781cbafb5d",
+        "type": "http in",
+        "z": "f886dfa246e3837f",
+        "name": "Sigfox Backend",
+        "url": "/sigfox/bioswale",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 120,
+        "y": 320,
+        "wires": [
+            [
+                "6927c3a13261e7af",
+                "3f5114d97e404492"
+            ]
+        ]
+    },
+    {
+        "id": "6927c3a13261e7af",
+        "type": "http response",
+        "z": "f886dfa246e3837f",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 310,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "f4a9c2aa247c6cc0",
+        "type": "comment",
+        "z": "f886dfa246e3837f",
+        "name": "Nivel de agua",
+        "info": "",
+        "x": 350,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "3f5114d97e404492",
+        "type": "switch",
+        "z": "f886dfa246e3837f",
+        "name": "HC-KUBIK-BAR-LEV",
+        "property": "payload.device",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "2031F3C",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 380,
+        "y": 160,
+        "wires": [
+            [
+                "5538b58e5f71e1d6"
+            ]
+        ]
+    },
+    {
+        "id": "5538b58e5f71e1d6",
+        "type": "function",
+        "z": "f886dfa246e3837f",
+        "name": "decode",
+        "func": "const lat = 41.541875;\nconst lon = 2.235284;\nconst description = 'sensor de presión de agua en el url';\nconst device = 'HC-KUBIK-BAR-LEV';\nconst tipo = 'HC-BAR'\nconst deviceID = msg.payload.device;\nconst unit = 'mm';\n\nfunction decodeHexString(hexString) {\n\n    // Validación: La trama 'hexString' debe tener 24 caracteres (12 bytes)\n    if (typeof hexString !== 'string' || hexString.length !== 24) {\n        return `Trama descartada: la trama de datos ('${hexString}') no tiene 24 caracteres.`;\n    }\n\n    let battery = `${parseInt(hexString[0], 16)}i`;\n    const channelOneVoltage = parseInt(hexString.substring(1, 8), 16) / 1000000;\n\n    if (channelOneVoltage == 0) return null;\n\n    const altura = getAltitude(channelOneVoltage);\n\n    return [{\n        battery,\n        altura,\n        lat,\n        lon\n    },\n    {\n        description,\n        device,\n        deviceID,\n        tipo,\n        unit\n    }];\n}\n\n/**\n * Calcula la altura de presión de la columna de agua.\n * Fórmula basada en Excel: = (1.4 * G8) + 0.004\n *\n * @param {number} inputVoltage - El valor del voltage para el cual se quiere encontrar la altura.\n * @returns {number|null} La altura en mm.\n */\nfunction getAltitude(inputVoltage) {\n    // Verificación de seguridad: si no es un número, devolvemos null\n    if (typeof inputVoltage !== 'number' || isNaN(inputVoltage)) {\n        return null;\n    }\n    return ((1.4 * inputVoltage) + 0.004) * 1000;\n}\n\nconst hexString = msg.payload.data;\n// Validación: La trama 'hexString' debe tener 24 caracteres (12 bytes)\nif (typeof hexString !== 'string' || hexString.length !== 24) {\n    return null;\n}\nconst decodedData = decodeHexString(hexString);\nmsg.payload = decodedData;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 160,
+        "wires": [
+            [
+                "723878d915310d06"
+            ]
+        ]
+    },
+    {
+        "id": "723878d915310d06",
+        "type": "influxdb out",
+        "z": "f886dfa246e3837f",
+        "influxdb": "e45426d27de45887",
+        "name": "InfluxDB",
+        "measurement": "terreno",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "tecnalia",
+        "bucket": "bioswale",
+        "x": 820,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "a214c329e13c361c",
+        "type": "comment",
+        "z": "f886dfa246e3837f",
+        "name": "Humedad del terreno",
+        "info": "",
+        "x": 380,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "4c0b01123c07d36a",
+        "type": "switch",
+        "z": "f886dfa246e3837f",
+        "name": "HC-SOIL-BIO-01",
+        "property": "payload.device",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "C0F8CC",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 370,
+        "y": 300,
+        "wires": [
+            [
+                "c27762d3cce765ad"
+            ]
+        ]
+    },
+    {
+        "id": "c27762d3cce765ad",
+        "type": "function",
+        "z": "f886dfa246e3837f",
+        "name": "decode",
+        "func": "const lat = 41.41699213293235;\nconst lon = 2.1352364970297626;\nconst description = 'sensor de humedad del terreno (vwc)';\nconst device = 'HC-SOIL-BIO-01';\nconst tipo = 'HC-SOIL-BIO'\nconst deviceID = msg.payload.device;\nconst unit = 'm3/m3'; // Volumetric Water Content\n\nfunction decodeHexString(hexString) {\n\n    // Validación: La trama 'hexString' debe tener 24 caracteres (12 bytes)\n    if (typeof hexString !== 'string' || hexString.length !== 24) {\n        return `Trama descartada: la trama de datos ('${hexString}') no tiene 24 caracteres.`;\n    }\n\n    let battery = `${parseInt(hexString[0], 16)}i`;\n    const channelOneVoltage = parseInt(hexString.substring(1, 8), 16) / 1000000;\n\n    if (channelOneVoltage == 0) return null;\n\n    const vwc = getVWC(channelOneVoltage);\n\n    return [{\n        battery,\n        vwc,\n        lat,\n        lon\n    },\n    {\n        description,\n        device,\n        deviceID,\n        tipo,\n        unit\n    }];\n}\n\n/**\n * Calcula el Contenido Volumétrico de Agua (VWC).\n * Fórmula: VWC = 4.824e-10 * mV^3 - 2.278e-6 * mV^2 + 3.898e-3 * mV - 2.154\n * Donde mV = Voltage * 1000\n * Límites: Min 0, Max 0.90\n *\n * @param {number} inputVoltage - El valor del voltaje en Voltios.\n * @returns {number|null} El VWC en m3/m3.\n */\nfunction getVWC(inputVoltage) {\n    // Verificación de seguridad\n    if (typeof inputVoltage !== 'number' || isNaN(inputVoltage)) {\n        return null;\n    }\n\n    // La fórmula requiere Vread * 1000 (es decir, milivoltios)\n    const mv = inputVoltage * 1000;\n\n    // Aplicación de la fórmula polinómica\n    // VWC = A*x^3 - B*x^2 + C*x - D\n    let calculatedVWC = \n        (4.824 * Math.pow(10, -10) * Math.pow(mv, 3)) - \n        (2.278 * Math.pow(10, -6)  * Math.pow(mv, 2)) + \n        (3.898 * Math.pow(10, -3)  * mv) - \n        2.154;\n\n    // Aplicar límites (Clamping)\n    // MAX: 0.90 m3/m3\n    // MIN: 0 m3/m3\n    if (calculatedVWC > 0.90) {\n        calculatedVWC = 0.90;\n    } else if (calculatedVWC < 0) {\n        calculatedVWC = 0.0;\n    }\n\n    // Opcional: Redondear a 4 decimales para limpieza\n    return parseFloat(calculatedVWC.toFixed(4));\n}\n\nconst hexString = msg.payload.data;\n// Validación: La trama 'hexString' debe tener 24 caracteres (12 bytes)\nif (typeof hexString !== 'string' || hexString.length !== 24) {\n    return null;\n}\nconst decodedData = decodeHexString(hexString);\nmsg.payload = decodedData;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 300,
+        "wires": [
+            [
+                "723878d915310d06"
+            ]
+        ]
+    },
+    {
+        "id": "4587a8f729085d71",
+        "type": "switch",
+        "z": "f886dfa246e3837f",
+        "name": "HC-SOIL-BIO-02",
+        "property": "payload.device",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "C0F09B",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 370,
+        "y": 340,
+        "wires": [
+            [
+                "7fa651efbaddd594"
+            ]
+        ]
+    },
+    {
+        "id": "7fa651efbaddd594",
+        "type": "function",
+        "z": "f886dfa246e3837f",
+        "name": "decode",
+        "func": "const lat = 41.41699213293235;\nconst lon = 2.1352364970297626;\nconst description = 'sensor de humedad del terreno (vwc)';\nconst device = 'HC-SOIL-BIO-02';\nconst tipo = 'HC-SOIL-BIO'\nconst deviceID = msg.payload.device;\nconst unit = 'm3/m3'; // Volumetric Water Content\n\nfunction decodeHexString(hexString) {\n\n    // Validación: La trama 'hexString' debe tener 24 caracteres (12 bytes)\n    if (typeof hexString !== 'string' || hexString.length !== 24) {\n        return `Trama descartada: la trama de datos ('${hexString}') no tiene 24 caracteres.`;\n    }\n\n    let battery = `${parseInt(hexString[0], 16)}i`;\n    const channelOneVoltage = parseInt(hexString.substring(1, 8), 16) / 1000000;\n\n    if (channelOneVoltage == 0) return null;\n\n    const vwc = getVWC(channelOneVoltage);\n\n    return [{\n        battery,\n        vwc,\n        lat,\n        lon\n    },\n    {\n        description,\n        device,\n        deviceID,\n        tipo,\n        unit\n    }];\n}\n\n/**\n * Calcula el Contenido Volumétrico de Agua (VWC).\n * Fórmula: VWC = 4.824e-10 * mV^3 - 2.278e-6 * mV^2 + 3.898e-3 * mV - 2.154\n * Donde mV = Voltage * 1000\n * Límites: Min 0, Max 0.90\n *\n * @param {number} inputVoltage - El valor del voltaje en Voltios.\n * @returns {number|null} El VWC en m3/m3.\n */\nfunction getVWC(inputVoltage) {\n    // Verificación de seguridad\n    if (typeof inputVoltage !== 'number' || isNaN(inputVoltage)) {\n        return null;\n    }\n\n    // La fórmula requiere Vread * 1000 (es decir, milivoltios)\n    const mv = inputVoltage * 1000;\n\n    // Aplicación de la fórmula polinómica\n    // VWC = A*x^3 - B*x^2 + C*x - D\n    let calculatedVWC = \n        (4.824 * Math.pow(10, -10) * Math.pow(mv, 3)) - \n        (2.278 * Math.pow(10, -6)  * Math.pow(mv, 2)) + \n        (3.898 * Math.pow(10, -3)  * mv) - \n        2.154;\n\n    // Aplicar límites (Clamping)\n    // MAX: 0.90 m3/m3\n    // MIN: 0 m3/m3\n    if (calculatedVWC > 0.90) {\n        calculatedVWC = 0.90;\n    } else if (calculatedVWC < 0) {\n        calculatedVWC = 0.0;\n    }\n\n    // Opcional: Redondear a 4 decimales para limpieza\n    return parseFloat(calculatedVWC.toFixed(4));\n}\n\nconst hexString = msg.payload.data;\n// Validación: La trama 'hexString' debe tener 24 caracteres (12 bytes)\nif (typeof hexString !== 'string' || hexString.length !== 24) {\n    return null;\n}\nconst decodedData = decodeHexString(hexString);\nmsg.payload = decodedData;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 340,
+        "wires": [
+            [
+                "723878d915310d06"
+            ]
+        ]
+    },
+    {
+        "id": "fe434d1c6647765b",
+        "type": "switch",
+        "z": "f886dfa246e3837f",
+        "name": "HC-SOIL-BIO-03",
+        "property": "payload.device",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "C0FB1E",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 370,
+        "y": 380,
+        "wires": [
+            [
+                "f0374464e588db62"
+            ]
+        ]
+    },
+    {
+        "id": "f0374464e588db62",
+        "type": "function",
+        "z": "f886dfa246e3837f",
+        "name": "decode",
+        "func": "const lat = 41.41699213293235;\nconst lon = 2.1352364970297626;\nconst description = 'sensor de humedad del terreno (vwc)';\nconst device = 'HC-SOIL-BIO-03';\nconst tipo = 'HC-SOIL-BIO'\nconst deviceID = msg.payload.device;\nconst unit = 'm3/m3'; // Volumetric Water Content\n\nfunction decodeHexString(hexString) {\n\n    // Validación: La trama 'hexString' debe tener 24 caracteres (12 bytes)\n    if (typeof hexString !== 'string' || hexString.length !== 24) {\n        return `Trama descartada: la trama de datos ('${hexString}') no tiene 24 caracteres.`;\n    }\n\n    let battery = `${parseInt(hexString[0], 16)}i`;\n    const channelOneVoltage = parseInt(hexString.substring(1, 8), 16) / 1000000;\n\n    if (channelOneVoltage == 0) return null;\n\n    const vwc = getVWC(channelOneVoltage);\n\n    return [{\n        battery,\n        vwc,\n        lat,\n        lon\n    },\n    {\n        description,\n        device,\n        deviceID,\n        tipo,\n        unit\n    }];\n}\n\n/**\n * Calcula el Contenido Volumétrico de Agua (VWC).\n * Fórmula: VWC = 4.824e-10 * mV^3 - 2.278e-6 * mV^2 + 3.898e-3 * mV - 2.154\n * Donde mV = Voltage * 1000\n * Límites: Min 0, Max 0.90\n *\n * @param {number} inputVoltage - El valor del voltaje en Voltios.\n * @returns {number|null} El VWC en m3/m3.\n */\nfunction getVWC(inputVoltage) {\n    // Verificación de seguridad\n    if (typeof inputVoltage !== 'number' || isNaN(inputVoltage)) {\n        return null;\n    }\n\n    // La fórmula requiere Vread * 1000 (es decir, milivoltios)\n    const mv = inputVoltage * 1000;\n\n    // Aplicación de la fórmula polinómica\n    // VWC = A*x^3 - B*x^2 + C*x - D\n    let calculatedVWC = \n        (4.824 * Math.pow(10, -10) * Math.pow(mv, 3)) - \n        (2.278 * Math.pow(10, -6)  * Math.pow(mv, 2)) + \n        (3.898 * Math.pow(10, -3)  * mv) - \n        2.154;\n\n    // Aplicar límites (Clamping)\n    // MAX: 0.90 m3/m3\n    // MIN: 0 m3/m3\n    if (calculatedVWC > 0.90) {\n        calculatedVWC = 0.90;\n    } else if (calculatedVWC < 0) {\n        calculatedVWC = 0.0;\n    }\n\n    // Opcional: Redondear a 4 decimales para limpieza\n    return parseFloat(calculatedVWC.toFixed(4));\n}\n\nconst hexString = msg.payload.data;\n// Validación: La trama 'hexString' debe tener 24 caracteres (12 bytes)\nif (typeof hexString !== 'string' || hexString.length !== 24) {\n    return null;\n}\nconst decodedData = decodeHexString(hexString);\nmsg.payload = decodedData;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 380,
+        "wires": [
+            [
+                "723878d915310d06"
+            ]
+        ]
+    },
+    {
+        "id": "e45426d27de45887",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "InfluxDB",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://192.168.1.6:8086",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "29cb30d259f8751b",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0"
+        }
+    }
+]
