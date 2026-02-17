@@ -175,9 +175,10 @@ altura (mm) = ((1.4 × voltaje) + 0.004) × 1000
 bioswale/
 ├── README.md                              # Este archivo
 ├── nodered.png                            # Diagrama del flujo Node-RED
-├── sensor-soil-moisture.js                # Decoder: humedad del terreno (VWC) — TEROS 10
-├── sensor-presion.js                      # Decoder: nivel hidrostático — S-8010 SMART LINE
-├── sensor-presion-test.js                 # Decoder de test (presión, device ID de prueba)
+├── nodered-decoder/
+│   ├── sensor-soil-moisture.js            # Decoder: humedad del terreno (VWC) — TEROS 10
+│   ├── sensor-presion.js                  # Decoder: nivel hidrostático — S-8010 SMART LINE
+│   └── sensor-presion-test.js             # Decoder de test (presión, device ID de prueba)
 └── Node-RED backup/
     └── flows.json                         # Backup del flujo Node-RED completo
 ```
